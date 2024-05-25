@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
-import 'package:sogra_front/view/ar_screen.dart';
+import 'package:sogra_front/view/ar_view/ar_screen.dart';
 import 'package:sogra_front/view/my_bread_screen/mybread_screen.dart';
 
 import 'map_view/map_screen.dart';

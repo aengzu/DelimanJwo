@@ -1,24 +1,25 @@
 class User {
-  final String memberId;
+  final String id;
   String? rank;
   final String password;
 
   User({
-    required this.memberId,
+    required this.id,
     this.rank,
     required this.password,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      memberId: json['memberId'],
-      password: json['password'],
+      id: json['id'] ?? '',
+      rank: json['rank'] ?? '', // 'rank'가 null일 경우 빈 문자열로 처리
+      password: json['password'] ?? '',
     );
   }
 
   Map<String, String> toJson() {
     return {
-      'memberId': memberId,
+      'id': id,
       'password': password,
     };
   }
