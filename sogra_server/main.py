@@ -1,15 +1,30 @@
-from fastapi import FastAPI, HTTPException, Request
+import sys
+import os
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List
-import mysql.connector
 from passlib.context import CryptContext
 from dotenv import load_dotenv
-import os
 import logging
 import time
 import datetime
+import aiomysql
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.future import select
+from sqlalchemy.orm import sessionmaker
+
+# 현재 파일의 디렉토리를 PYTHONPATH에 추가
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# database 모듈 임포트
+try:
+    from database import get_db
+    from models import Users, Menu, Restaurant
+except ModuleNotFoundError as e:
+    print(f"Error: {e}. Please ensure that database.py and models.py are in the same directory as this script.")
 
 # .env 파일 로드
 load_dotenv()
@@ -33,13 +48,13 @@ db_config = {
 # 암호화 설정 (bcrypt로 변경)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-class Restaurant(BaseModel):
+class RestaurantModel(BaseModel):
     id: int
     name: str
     latitude: float
     longitude: float
 
-class Menu(BaseModel):
+class MenuModel(BaseModel):
     id: int
     restaurant_id: int
     name: str
@@ -50,6 +65,7 @@ class User(BaseModel):
     username: str
     email: str
     password: str
+    rank: str  # Add rank to the User model
 
 class UserMenu(BaseModel):
     user_id: int
@@ -57,91 +73,75 @@ class UserMenu(BaseModel):
     restaurant_id: int
     date_eaten: datetime.date
 
-@app.post("/signup")
-def signup(user: User):
-    hashed_password = pwd_context.hash(user.password)
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-            (user.username, user.email, hashed_password)
-        )
-        conn.commit()
-        conn.close()
-        return {"msg": "User created successfully."}
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=400, detail=str(err))
+# SQLAlchemy 비동기 엔진 및 세션 설정
+DATABASE_URL = os.getenv("DATABASE_URL").replace("pymysql", "aiomysql")
+engine = create_async_engine(DATABASE_URL, echo=True)
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    class_=AsyncSession
+)
 
-@app.get("/restaurants", response_model=List[Restaurant])
-def get_restaurants():
-    start_time = time.time()
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM restaurants")
-    result = cursor.fetchall()
-    conn.close()
-    logger.info(f"get_restaurants took {time.time() - start_time} seconds")
-    return result
+@app.get("/restaurants", response_model=List[RestaurantModel])
+async def get_restaurants():
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(Restaurant))
+            restaurants = result.scalars().all()
+    return restaurants
 
-@app.get("/restaurants/{restaurant_id}/menus", response_model=List[Menu])
-def get_menus(restaurant_id: int):
-    start_time = time.time()
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM menus WHERE restaurant_id = %s", (restaurant_id,))
-    result = cursor.fetchall()
-    conn.close()
-    logger.info(f"get_menus took {time.time() - start_time} seconds")
-    return result
+@app.get("/restaurants/{restaurant_id}/menus", response_model=List[MenuModel])
+async def get_menus(restaurant_id: int):
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(Menu).where(Menu.restaurant_id == restaurant_id))
+            menus = result.scalars().all()
+    return menus
 
 @app.post("/user_menu")
-def add_user_menu(user_menu: UserMenu):
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO user_menus (user_id, menu_id, restaurant_id, date_eaten) VALUES (%s, %s, %s, %s)",
-            (user_menu.user_id, user_menu.menu_id, user_menu.restaurant_id, user_menu.date_eaten)
-        )
-        conn.commit()
-        conn.close()
-        return {"msg": "User menu added successfully"}
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=400, detail=str(err))
+async def add_user_menu(user_menu: UserMenu):
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            new_user_menu = UserMenu(
+                user_id=user_menu.user_id,
+                menu_id=user_menu.menu_id,
+                restaurant_id=user_menu.restaurant_id,
+                date_eaten=user_menu.date_eaten
+            )
+            session.add(new_user_menu)
+            await session.commit()
+    return {"msg": "User menu added successfully"}
 
 @app.get("/users", response_model=List[User])
-def get_users():
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, username, email, password FROM users")
-        result = cursor.fetchall()
-        conn.close()
-        return result
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=400, detail=str(err))
+async def get_users():
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(User))
+            users = result.scalars().all()
+    return users
 
 @app.get("/users/{user_id}/menus", response_model=List[UserMenu])
-def get_user_menus(user_id: int):
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM user_menus WHERE user_id = %s", (user_id,))
-        result = cursor.fetchall()
-        conn.close()
-        return result
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=400, detail=str(err))
+async def get_user_menus(user_id: int):
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(UserMenu).where(UserMenu.user_id == user_id))
+            user_menus = result.scalars().all()
+    return user_menus
 
 @app.get("/restaurants/{restaurant_id}/menus/view", response_class=HTMLResponse)
 async def view_menus(request: Request, restaurant_id: int):
     try:
         start_time = time.time()
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM menus WHERE restaurant_id = %s", (restaurant_id,))
-        menu = cursor.fetchall()
+        conn = await aiomysql.connect(
+            host=db_config['host'],
+            port=3306,
+            user=db_config['user'],
+            password=db_config['password'],
+            db=db_config['database']
+        )
+        async with conn.cursor(aiomysql.DictCursor) as cursor:
+            await cursor.execute("SELECT * FROM menus WHERE restaurant_id = %s", (restaurant_id,))
+            menu = await cursor.fetchall()
         conn.close()
         logger.info(f"view_menus database query took {time.time() - start_time} seconds")
 
@@ -152,6 +152,30 @@ async def view_menus(request: Request, restaurant_id: int):
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# New endpoints for handling user rank
+
+@app.get("/users/{user_id}/rank", response_model=str)
+async def get_user_rank(user_id: int, db: AsyncSession = Depends(get_db)):
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(Users).where(Users.user_id == user_id))
+            user = result.scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            return user.rank
+
+@app.put("/users/{user_id}/rank", response_model=str)
+async def update_user_rank(user_id: int, rank: str, db: AsyncSession = Depends(get_db)):
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            result = await session.execute(select(Users).where(Users.user_id == user_id))
+            user = result.scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            user.rank = rank
+            await session.commit()
+            return "User rank updated successfully"
 
 if __name__ == "__main__":
     import uvicorn
