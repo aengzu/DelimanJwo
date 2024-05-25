@@ -7,12 +7,10 @@ import '../constants/base_url.dart';
 import '../model/user.dart';
 import '../view/main_screens.dart';
 
-
 class LoginController extends GetxController {
   final String _apiUrl;
 
-  // TODO : 이 파트만 로그인 시 수정
-   LoginController() : _apiUrl = "${AppUrl.baseUrl}/member/login";
+  LoginController() : _apiUrl = "${AppUrl.baseUrl}auth/token";
 
   var isLoading = false.obs;
   var errorMessage = ''.obs;
@@ -20,7 +18,7 @@ class LoginController extends GetxController {
   TextEditingController memberIdController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
-  Future<void> login(String memberId, String password) async {
+  Future<void> login(String id, String password) async {
     isLoading.value = true;
     errorMessage.value = '';
 
@@ -28,12 +26,12 @@ class LoginController extends GetxController {
       final response = await http.post(
         Uri.parse(_apiUrl),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/x-www-form-urlencoded', // 변경: OAuth2PasswordRequestForm은 x-www-form-urlencoded 형식을 사용
         },
-        body: jsonEncode({
-          'memberId': memberId,
+        body: {
+          'username': id, // OAuth2PasswordRequestForm은 username 필드를 사용
           'password': password,
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
@@ -45,13 +43,14 @@ class LoginController extends GetxController {
       } else {
         errorMessage.value = 'Failed to login: ${response.statusCode}';
         Get.snackbar('Error', errorMessage.value, snackPosition: SnackPosition.TOP);
+        print(errorMessage.value);
       }
     } catch (e) {
       errorMessage.value = 'Failed to login: $e';
       Get.snackbar('Error', errorMessage.value, snackPosition: SnackPosition.TOP);
     } finally {
       isLoading.value = false;
-
     }
   }
+
 }

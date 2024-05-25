@@ -14,7 +14,7 @@ class SignUpController extends GetxController {
   final String _apiUrl;
 
   // TODO : 회원가입 API 로 수정
-  SignUpController() : _apiUrl = "${AppUrl.baseUrl}/api/member/register";
+  SignUpController() : _apiUrl = "${AppUrl.baseUrl}auth/";
 
   var isLoading = false.obs;
   var errorMessage = ''.obs;
@@ -30,9 +30,9 @@ class SignUpController extends GetxController {
   }
 
 
-  Future<void> signUp(String memberId, String password) async {
+  Future<void> signUp(String id, String password) async {
     User user = User(
-        memberId: memberId,
+        id: id,
         password: password
     );
 
