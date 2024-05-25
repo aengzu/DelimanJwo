@@ -12,6 +12,6 @@ class SplashController extends GetxController {
   }
 
   void _loadNextScreen() {
-      Get.offAll(() => MainScreens());
+      Get.offAll(() => LoginScreen());
   }
 }
