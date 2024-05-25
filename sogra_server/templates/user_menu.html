@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Menus</title>
+</head>
+<body>
+<h1>User Menus</h1>
+<ul>
+    {% for user_menu in user_menus %}
+    <li>
+        <p>Menu ID: {{ user_menu.menu_id }}</p>
+        <p>Restaurant ID: {{ user_menu.restaurant_id }}</p>
+        <p>Date Eaten: {{ user_menu.date_eaten }}</p>
+    </li>
+    {% endfor %}
+</ul>
+</body>
+</html>

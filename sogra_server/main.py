@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # database 모듈 임포트
 try:
     from database import get_db
-    from models import Users, Menu, Restaurant
+    from models import Users, Menu, Restaurant, UserMenu  # Users, Menu, Restaurant, UserMenu 임포트
 except ModuleNotFoundError as e:
     print(f"Error: {e}. Please ensure that database.py and models.py are in the same directory as this script.")
 
@@ -48,6 +48,7 @@ db_config = {
 # 암호화 설정 (bcrypt로 변경)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Pydantic 모델 정의
 class RestaurantModel(BaseModel):
     id: int
     name: str
@@ -60,21 +61,20 @@ class MenuModel(BaseModel):
     name: str
     image_url: str
 
-class User(BaseModel):
-    id: int
-    username: str
-    email: str
-    password: str
+class UserModel(BaseModel):
+    user_id: int
+    id: str
+    hashed_password: str
     rank: str  # Add rank to the User model
 
-class UserMenu(BaseModel):
+class UserMenuModel(BaseModel):
     user_id: int
     menu_id: int
     restaurant_id: int
     date_eaten: datetime.date
 
 # SQLAlchemy 비동기 엔진 및 세션 설정
-DATABASE_URL = os.getenv("DATABASE_URL").replace("pymysql", "aiomysql")
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+aiomysql://root:0000@localhost:3306/sogra")
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(
     bind=engine,
@@ -99,7 +99,7 @@ async def get_menus(restaurant_id: int):
     return menus
 
 @app.post("/user_menu")
-async def add_user_menu(user_menu: UserMenu):
+async def add_user_menu(user_menu: UserMenuModel):
     async with AsyncSessionLocal() as session:
         async with session.begin():
             new_user_menu = UserMenu(
@@ -112,21 +112,21 @@ async def add_user_menu(user_menu: UserMenu):
             await session.commit()
     return {"msg": "User menu added successfully"}
 
-@app.get("/users", response_model=List[User])
+@app.get("/users", response_model=List[UserModel])
 async def get_users():
     async with AsyncSessionLocal() as session:
         async with session.begin():
-            result = await session.execute(select(User))
+            result = await session.execute(select(Users))  # select(User) -> select(Users)로 변경
             users = result.scalars().all()
     return users
 
-@app.get("/users/{user_id}/menus", response_model=List[UserMenu])
-async def get_user_menus(user_id: int):
+@app.get("/users/{user_id}/menus", response_class=HTMLResponse)
+async def get_user_menus(request: Request, user_id: int):
     async with AsyncSessionLocal() as session:
         async with session.begin():
             result = await session.execute(select(UserMenu).where(UserMenu.user_id == user_id))
             user_menus = result.scalars().all()
-    return user_menus
+    return templates.TemplateResponse("user_menu.html", {"request": request, "user_menus": user_menus})
 
 @app.get("/restaurants/{restaurant_id}/menus/view", response_class=HTMLResponse)
 async def view_menus(request: Request, restaurant_id: int):
@@ -142,7 +142,7 @@ async def view_menus(request: Request, restaurant_id: int):
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute("SELECT * FROM menus WHERE restaurant_id = %s", (restaurant_id,))
             menu = await cursor.fetchall()
-        conn.close()
+        await conn.ensure_closed()
         logger.info(f"view_menus database query took {time.time() - start_time} seconds")
 
         start_time = time.time()
@@ -164,18 +164,6 @@ async def get_user_rank(user_id: int, db: AsyncSession = Depends(get_db)):
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             return user.rank
-
-@app.put("/users/{user_id}/rank", response_model=str)
-async def update_user_rank(user_id: int, rank: str, db: AsyncSession = Depends(get_db)):
-    async with AsyncSessionLocal() as session:
-        async with session.begin():
-            result = await session.execute(select(Users).where(Users.user_id == user_id))
-            user = result.scalar_one_or_none()
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            user.rank = rank
-            await session.commit()
-            return "User rank updated successfully"
 
 if __name__ == "__main__":
     import uvicorn

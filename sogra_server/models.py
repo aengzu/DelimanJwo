@@ -6,7 +6,6 @@ class Users(Base):
     __tablename__ = 'users'
     user_id = Column(Integer, primary_key=True, index=True)
     id = Column(String(100), unique=True, index=True)
-    email = Column(String(100), unique=True, index=True)
     hashed_password = Column(String(255))
     rank = Column(String(100))
 
@@ -16,6 +15,7 @@ class Menu(Base):
     restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
     name = Column(String(255))
     image_url = Column(String(255))
+    restaurant = relationship("Restaurant", back_populates="menus")
 
 class Restaurant(Base):
     __tablename__ = 'restaurants'
