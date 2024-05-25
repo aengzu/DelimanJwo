@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sogra_front/view/ar_view/ar_screen.dart';
 import 'package:sogra_front/view/my_bread_screen/mybread_screen.dart';
 
+import '../controller/user_controller.dart';
 import 'map_view/map_screen.dart';
 
 
@@ -16,6 +17,7 @@ class MainScreens extends StatefulWidget {
 
 class _MainScreensState extends State<MainScreens> {
   int _selectedIndex = 1;
+  final UserController userController = Get.find<UserController>();
 
   @override
   void initState() {

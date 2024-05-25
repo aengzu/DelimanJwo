@@ -40,7 +40,9 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Container(
         child: NaverMap(
-          options: const NaverMapViewOptions(),
+          options: const NaverMapViewOptions(
+
+          ),
           onMapReady: (controller) {
             print("네이버 맵 로딩됨!");
           },

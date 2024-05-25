@@ -8,4 +8,5 @@ class ImageAssets
   static const logoYellow = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/logo_yellow.png';
   static const character = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/signature.png';
   static const logoBlack = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/logo_black.png';
+  static const defaultProfile = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/default_profile.png';
 }
