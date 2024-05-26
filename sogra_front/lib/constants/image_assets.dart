@@ -10,4 +10,11 @@ class ImageAssets
   static const logoBlack = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/logo_black.png';
   static const defaultProfile = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/default_profile.png';
   static const marker = '/Users/aengzu/AndroidStudioProjects/sogra/sogra_front/assets/images/marker.png';
+
+  static const bread1 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread1.png';
+  static const bread2 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread2.png';
+  static const bread3 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread3.png';
+  static const bread4 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread4.png';
+  static const bread5 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread5.png';
+  static const bread6 = '/Users/aengzu/AndroidStudioProjects/Sogra2/sogra_front/assets/images/bread6.png';
 }

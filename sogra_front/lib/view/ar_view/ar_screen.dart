@@ -23,7 +23,6 @@ class _ArScreenState extends State<ArScreen> {
 
   void _onArCoreViewCreated(ArCoreController controller) {
     arCoreController = controller;
-
     _addSphere(arCoreController);
   }
 
@@ -45,7 +44,7 @@ class _ArScreenState extends State<ArScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          '델리만쥬',
+          '델리만쥐',
           style: GoogleFonts.gugi(
             textStyle: TextStyle(
               color: Colors.black,

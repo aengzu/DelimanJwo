@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -178,7 +179,7 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          '델리만쥬',
+          '델리만쥐',
           style: GoogleFonts.gugi(
             textStyle: TextStyle(
               color: Colors.black,
