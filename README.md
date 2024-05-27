@@ -4,7 +4,6 @@
 ![델리만쥬발표자료-01](https://github.com/aengzu/Sogra/assets/102356873/4c8eb3c0-a4bc-4d1c-a44a-6e81fd337985)
 
 
-### Teammate
 ## Team
 |<img src="https://avatars.githubusercontent.com/u/113099494?v=4" width="150" height="150"/>|<img src="https://avatars.githubusercontent.com/u/102356873?v=4" width="150" height="150"/>|
 |:-:|:-:|
